@@ -10,11 +10,12 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 // 後端設置
 import axios from 'axios';
 
-// const BASE_URL = process.env.BACKEND_URL;
+axios.defaults.baseURL = process.env.VUE_APP_BASE_URL;
 // const BASE_URL = 'https://bookstore-backend-production-f711.up.railway.app';
-const BASE_URL = 'http://localhost:3000';
+// const BASE_URL = 'https://retreatbookroom.onrender.com';
+// const BASE_URL = 'http://localhost:3000';
 // this.$axios.post
-axios.defaults.baseURL = BASE_URL;
+// axios.defaults.baseURL = BASE_URL;
 
 Vue.prototype.$axios = axios;
 // 把 baseURL 也綁到 Vue 原型方便全局取用
