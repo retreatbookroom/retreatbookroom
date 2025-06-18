@@ -19,7 +19,7 @@ axios.defaults.baseURL = process.env.VUE_APP_BASE_URL;
 
 Vue.prototype.$axios = axios;
 // 把 baseURL 也綁到 Vue 原型方便全局取用
-Vue.prototype.$apiBaseUrl = BASE_URL;
+Vue.prototype.$apiBaseUrl = process.env.VUE_APP_BASE_URL;
 
 
 
