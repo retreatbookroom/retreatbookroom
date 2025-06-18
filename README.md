@@ -1,4 +1,5 @@
 # retreatbookroom 棲遲書店專案
+該專案為整合版本，適用於分離式部屬，[原始專案請參考此處](https://github.com/teddy135790196/CHU)
 
 ## 成員
 彭-[teddy135790196](https://github.com/teddy135790196)<br>
