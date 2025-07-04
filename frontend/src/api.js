@@ -6,7 +6,7 @@ import router from './router'; // 載入 router 以便攔截器中導航
 const BASE_URL = process.env.VUE_APP_BACKEND_URL || 
   (process.env.NODE_ENV === 'development' 
     ? 'http://localhost:3000' 
-    : 'https://bookstore-backend-production.up.railway.app');
+    : 'https://retreatbookroom.onrender.com');
 
 const api = axios.create({
   baseURL: BASE_URL,

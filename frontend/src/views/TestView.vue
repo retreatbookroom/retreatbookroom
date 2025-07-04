@@ -37,7 +37,7 @@ export default {
   },
   methods: {
     async fetchBooks() {
-      const apiURL = 'https://bookstore-backend-production-f711.up.railway.app/books';
+      const apiURL = 'https://retreatbookroom.onrender.com/books';
       try {
         const response = await fetch(apiURL);
         if (!response.ok) throw new Error('網路錯誤: ' + response.status);
