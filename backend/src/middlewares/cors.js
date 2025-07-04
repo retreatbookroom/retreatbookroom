@@ -13,7 +13,9 @@ const allowedOrigins = [
   // 'http://127.0.0.1:8080',
   // 'http://127.0.0.1:8081',
   // 'http://127.0.0.1:5500',
-  'https://retreatbookroom.vercel.app'
+  'https://retreatbookroom.vercel.app',
+  'https://retreatbookroom-git-main-retreatbookrooms-projects.vercel.app',
+  'https://retreatbookroom-hsay3oeg3-retreatbookrooms-projects.vercel.app',
 ];
 
 const corsOptions = {

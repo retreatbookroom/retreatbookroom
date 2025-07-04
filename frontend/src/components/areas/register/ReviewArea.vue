@@ -24,23 +24,14 @@
         <span class="data">{{ form.phone }}</span>
       </div>
     </div>
-    
+
 
     <div class="col">
       <div class="captcha">
-        <BaseInput 
-          id="captcha" 
-          type="text" 
-          :label="message.labelText.captcha" 
-          :placeholder="message.labelText.captchaPlahold" 
-          :quote="message.labelText.captchaQuote"
-          error-message="" 
+        <BaseInput id="captcha" type="text" :label="message.labelText.captcha"
+          :placeholder="message.labelText.captchaPlahold" :quote="message.labelText.captchaQuote" error-message=""
           v-model="message.captch.input" />
-        <img 
-          :src="message.captch.image" 
-          alt="captcha"  
-          @click="reloadCaptcha"
-          draggable="false" />
+        <img :src="message.captch.image" alt="captcha" @click="reloadCaptcha" draggable="false" />
       </div>
     </div>
   </div>
@@ -82,7 +73,7 @@ export default {
           captchaQuote: '點擊圖片可更換',
           errformat: '驗證碼錯誤',
         },
-        captch:{
+        captch: {
           input: '',
           image: '',
         },
@@ -127,17 +118,24 @@ export default {
       }
     },
 
-    refreshCaptcha() {
-      // 更新圖片連結並加時間戳避免快取
-      // this.$apiBaseUrl 在 main.js 中
-      this.message.captch.image = `${this.$apiBaseUrl}/api/captcha?t=${Date.now()}`;
+    async refreshCaptcha() {
+      try {
+        const res = await fetch(`${this.$apiBaseUrl}/api/captcha?t=${Date.now()}`, {
+          credentials: 'include',  // 帶上 cookie
+        });
+        if (!res.ok) throw new Error('取得驗證碼失敗');
+        const blob = await res.blob();
+        this.message.captch.image = URL.createObjectURL(blob);
+      } catch (err) {
+        console.error(err);
+      }
     },
 
     reloadCaptcha() {
       // 點擊圖片換圖
       this.refreshCaptcha();
     },
-    
+
     submitCaptcha() {
       // axios.post('http://localhost:3000/api/captcha/verify', {
       this.$axios.post('/api/captcha/verify', {
@@ -145,19 +143,19 @@ export default {
       }, {
         withCredentials: true  // 🔑 讓 session cookie 被帶上
       })
-      .then(res => {
-        if (res.data.success) {
-          alert('✅ 驗證成功');
-          // 可以進一步做提交資料或跳下一步
-        } else {
-          alert('❌ 驗證碼錯誤');
-          this.refreshCaptcha(); // 換圖避免猜中
-          this.message.captch.input = ''; // 清空輸入
-        }
-      })
-      .catch(err => {
-        console.error('驗證錯誤:', err);
-      })
+        .then(res => {
+          if (res.data.success) {
+            alert('✅ 驗證成功');
+            // 可以進一步做提交資料或跳下一步
+          } else {
+            alert('❌ 驗證碼錯誤');
+            this.refreshCaptcha(); // 換圖避免猜中
+            this.message.captch.input = ''; // 清空輸入
+          }
+        })
+        .catch(err => {
+          console.error('驗證錯誤:', err);
+        })
     },
   }
 }
@@ -165,7 +163,6 @@ export default {
 
 
 <style scoped>
-
 /* ========================================
    基本全局樣式（適用於所有設備）
    寫好的CSS貼在這區
@@ -190,10 +187,10 @@ export default {
     margin: 18px auto;
   }
 
-  .form{
+  .form {
     padding: 0 24px;
 
-    .col{
+    .col {
       margin-bottom: 10px;
     }
 
@@ -213,11 +210,11 @@ export default {
       font-weight: bold;
     }
 
-    
+
   }
 
   /* 驗證碼區塊 */
-  .captcha{
+  .captcha {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -227,32 +224,32 @@ export default {
     padding: 0 24px;
     gap: 30px;
 
-    .inp_modle{
+    .inp_modle {
 
       input {
-        flex: 1; 
+        flex: 1;
         padding: 8px;
-        
+
         font-size: 16px;
       }
     }
-    
+
 
     img {
-      height: 60px; 
+      height: 60px;
       width: 100%;
-      cursor: pointer; 
+      cursor: pointer;
       border: 1px solid #ccc;
       border-radius: 4px;
       transform: translateY(6px);
 
       /* 變手指 */
-      cursor:pointer;
+      cursor: pointer;
       /* 禁止圖片拖動 */
-      -webkit-user-drag: none; 
+      -webkit-user-drag: none;
     }
   }
-  
+
 }
 
 
@@ -261,9 +258,7 @@ export default {
    xxl: ≥ 1400px (大桌機、4K 螢幕)
    container 寬度: 1320px
 ======================================== */
-@media (min-width: 1400px) {
-   
-}
+@media (min-width: 1400px) {}
 
 
 
@@ -272,9 +267,7 @@ export default {
    xl: 1200px ~ 1399px (一般桌機)
    container 寬度: 1140px
 ======================================== */
-@media (min-width: 1200px) and (max-width: 1399px) {
-   
-}
+@media (min-width: 1200px) and (max-width: 1399px) {}
 
 
 
@@ -283,9 +276,7 @@ export default {
    lg: 992px ~ 1199px (小型桌機、橫向大型平板)
    container 寬度: 960px
 ======================================== */
-@media (min-width: 992px) and (max-width: 1199px) {
-   
-}
+@media (min-width: 992px) and (max-width: 1199px) {}
 
 
 
@@ -294,9 +285,7 @@ export default {
    md: 768px ~ 991px (橫向 iPad、小型平板)
    container 寬度: 720px
 ======================================== */
-@media (min-width: 768px) and (max-width: 991px) {
-   
-}
+@media (min-width: 768px) and (max-width: 991px) {}
 
 
 
@@ -309,11 +298,13 @@ export default {
   h5 {
     font-size: 32px !important;
   }
-  .underline{
+
+  .underline {
     margin: 7px auto !important;
   }
-   /* 表單 */
-  .form{
+
+  /* 表單 */
+  .form {
 
     /* 文字 */
     .name {
@@ -328,7 +319,7 @@ export default {
   }
 
   /* 驗證碼區塊 */
-  .captcha{
+  .captcha {
     transform: translateY(50px) !important;
     margin-top: 20px !important;
   }
@@ -342,21 +333,22 @@ export default {
    container 寬度: 100% (fluid)
 ======================================== */
 @media (max-width: 576px) {
-/* 暱稱 */
+
+  /* 暱稱 */
   h5 {
     font-size: 28px !important;
   }
 
-  .underline{
+  .underline {
     margin: 5px auto !important;
   }
 
-  .col{
-      margin-bottom: 5px !important;
-    }
+  .col {
+    margin-bottom: 5px !important;
+  }
 
   /* 表單 */
-  .form{
+  .form {
 
     /* 文字 */
     .name {
@@ -371,7 +363,7 @@ export default {
   }
 
   /* 驗證碼區塊 */
-  .captcha{
+  .captcha {
     transform: translateY(50px) !important;
     margin-top: 15px !important;
   }
