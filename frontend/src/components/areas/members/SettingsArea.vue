@@ -63,25 +63,45 @@
 			<div class="inp_modle towline">
 				<div class="label-badge">
 					<label>電子信箱</label>
-					<span class="badge bg-success">已驗證</span>
+					<!-- <span class="badge bg-success">已驗證</span> -->
+					<span v-if="user.isEmailVerified" class="badge bg-success">已驗證</span>
+					<span v-else class="badge bg-warning text-dark">未驗證</span>
 				</div>
 				<div class="d-flex align-items-center w-100">
-					<input type="email" v-model="user.email" class="edit-input" v-show="isEditingContact" />
-					<p class="display-text" v-show="!isEditingContact">{{ user.email }}</p>
+					<!-- <input type="email" v-model="user.email" class="edit-input" v-show="isEditingContact" />
+					<p class="display-text" v-show="!isEditingContact">{{ user.email }}</p> -->
+					<p class="display-text">{{ user.email }}</p>
+					<button v-if="!isEditingContact && !user.isEmailVerified"
+						class="display-text btn btn-sm btn-outline-success ms-2" :disabled="isSending || countdown > 0"
+						@click="sendVerificationEmail">
+
+						<!-- 寄送中 -->
+						<span v-if="isSending">
+							<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+							寄送中...
+						</span>
+
+						<!-- 倒數中 -->
+						<span v-else-if="countdown > 0">
+							稍待 {{ countdown }} 秒
+						</span>
+
+						<!-- 預設 -->
+						<span v-else>
+							寄送驗證信
+						</span>
+					</button>
 				</div>
 			</div>
 
 			<div class="inp_modle towline">
 				<div class="label-badge">
 					<label>手機號碼</label>
-					<span class="badge bg-warning text-dark">未驗證</span>
+					<span class="badge bg-success">已驗證</span>
 				</div>
 				<div class="d-flex align-items-center w-100">
 					<input type="text" v-model="user.phone" class="edit-input" v-show="isEditingContact" />
 					<p class="display-text" v-show="!isEditingContact">{{ user.phone }}</p>
-					<button v-show="!isEditingContact" class="display-text btn btn-sm btn-outline-success ms-2">
-						寄送驗證信
-					</button>
 				</div>
 			</div>
 
@@ -115,7 +135,7 @@
 				<div class="d-flex align-items-center w-100">
 					<input type="email" value="myusername" class="edit-input" style="display:none;">
 					<p class="display-text">myusername</p>
-					<button id="toggleAccountEditBtn" class="btn btn-sm btn-outline-primary ms-2">修改帳號</button>
+					<!-- <button id="toggleAccountEditBtn" class="btn btn-sm btn-outline-primary ms-2">修改帳號</button> -->
 				</div>
 			</div>
 
@@ -158,8 +178,14 @@ export default {
 					address: "未設定通訊地址",
 				},
 			},
+			// 編輯狀態
 			isEditingInfo: false,
 			isEditingContact: false,
+
+			// 寄信相關
+			isSending: false,
+			countdown: 0,				// 目前還要倒數幾秒
+			countdownTimer: null,
 		};
 	},
 	computed: {
@@ -170,7 +196,8 @@ export default {
 					: "";
 			},
 			set(value) {
-				this.user.birth = value ? dayjs(value).toISOString() : "";
+				// 直接存純字串，避免時區問題
+				this.user.birth = value; // value 已經是 YYYY-MM-DD 字串
 			},
 		},
 		userSummary() {
@@ -189,20 +216,104 @@ export default {
 		},
 	},
 	methods: {
-		toggleInfoEdit() {
+		// 切換「個人資訊」的編輯狀態
+		async toggleInfoEdit() {
+			if (this.isEditingInfo) {
+				const user_id = localStorage.getItem('user_id');
+
+				const payload = {
+					nickname: this.user.nickname,
+					gender: this.user.gender,
+					birth: this.formattedBirth,
+					summary: this.user.summary
+				};
+
+				console.log("送出的資料內容：", payload); // ✅ 看看是否有空值、undefined、null 等
+
+				try {
+					await this.$axios.put(`/api/memberSetting/${user_id}/info`, payload);
+					alert('個人資訊已更新');
+				} catch (error) {
+					console.error('更新個人資訊失敗', error);
+					console.log('錯誤回應：', error.response?.data); // ✅ 抓後端訊息
+					alert('更新失敗');
+				}
+			}
+
 			this.isEditingInfo = !this.isEditingInfo;
 		},
-		toggleContactEdit() {
+
+		// 切換「聯絡方式」的編輯狀態
+		async toggleContactEdit() {
+			if (this.isEditingContact) {
+				// 按下「完成修改」時執行更新
+				try {
+					const user_id = localStorage.getItem('user_id');
+					await this.$axios.put(`/api/memberSetting/${user_id}/contact`, {
+						email: this.user.email,
+						phone: this.user.phone,
+						address: this.user.address
+					});
+					alert('聯絡方式已更新');
+				} catch (error) {
+					console.error('更新聯絡方式失敗', error);
+					alert('更新失敗');
+				}
+			}
 			this.isEditingContact = !this.isEditingContact;
 		},
+
 		// 登出按鈕
 		logout() {
 			if (confirm('確定要登出嗎？')) {
 				localStorage.removeItem('token')      // 清除 token
 				localStorage.removeItem('user_id')      // 清除 user_id
+				window.dispatchEvent(new Event('login-status-changed'));	// 全局監聽Header頭像
+				
 				this.$router.push('/login')           // 導向登入頁（路由請依你實際命名）
 			}
 		},
+
+		// 寄驗證信
+		async sendVerificationEmail() {
+			if (this.isSending) return; // 如果已經在寄，就不重複動作
+
+			this.isSending = true;
+
+			try {
+				const toEmail = this.user.email;
+
+				await this.$axios.post(`/api/email-verification/send`, {
+					toEmail,
+				});
+
+				alert('我們已發送驗證信至您的信箱🎉\n請在 5 分鐘內點擊信中的連結完成驗證。\n如未收到，請檢查垃圾郵件匣。');
+
+				// 啟動倒數 60 秒
+				this.startCountdown(60);
+			} catch (error) {
+				console.error('寄送驗證信失敗', error);
+				alert('寄送驗證信失敗，請稍後再試');
+			} finally {
+				this.isSending = false; // 無論成功失敗都還原狀態
+			}
+		},
+
+		// 驗證信冷卻倒數
+		startCountdown(seconds) {		// 輸入秒數
+			this.countdown = seconds;
+
+			this.countdownTimer = setInterval(() => {
+				if (this.countdown > 0) {
+					this.countdown--;
+				} else {
+					clearInterval(this.countdownTimer);
+					this.countdownTimer = null;
+				}
+			}, 1000);		// 每秒 -1
+		},
+
+
 		async fetchUserData() {
 			const user_id = localStorage.getItem("user_id");
 
@@ -214,6 +325,7 @@ export default {
 			try {
 				const res = await this.$axios.get(`/api/memberSetting/${user_id}`);
 				this.user = res.data.data || {};
+				// console.log("會員資料：", res.data.data);
 			} catch (err) {
 				console.error("取得會員資料失敗", err);
 				// alert("資料載入錯誤");

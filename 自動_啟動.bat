@@ -1,7 +1,7 @@
 chcp 65001 >nul
 @echo off
 set "base=%~dp0"
-cd /d "%base%\.."
+cd /d "%base%"
 
 echo 當前目錄為：%cd%
 echo.
@@ -24,4 +24,3 @@ if exist backend\index.js (
 
 echo.
 echo 已啟動前後端兩個視窗
-pause

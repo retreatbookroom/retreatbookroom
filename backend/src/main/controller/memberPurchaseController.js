@@ -1,10 +1,11 @@
 // backend/src/main/controller/orderAllController.js
 
-const orderService = require('../service/orderAllService');
+const orderService = require('../service/memberPurchaseService');
 
-exports.getAllOrders = async (req, res) => {
+exports.getOrdersByUserId = async (req, res) => {
+  const userId = req.params.userId;  // 從路由參數拿 userId
   try {
-    const orders = await orderService.getAllOrders();
+    const orders = await orderService.getOrdersByUserId(userId);
     res.status(200).json({ success: true, data: orders });
   } catch (err) {
     console.error('取得訂單錯誤：', err);

@@ -1,0 +1,56 @@
+name: Deploy Node.js App to Azure Web App
+
+on:
+  push:
+    branches:
+      - Minor-Projects
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      # 🔧 建置 frontend 並複製到 backend/frontend/dist
+      - name: Build frontend and move to backend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+          mkdir -p ../backend/frontend/dist
+          cp -r dist/* ../backend/frontend/dist/
+
+      # 📦 安裝 backend 套件
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm install
+
+      # 🗜 建立 release.zip（含 frontend/dist）
+      - name: Create zip package
+        run: |
+          cd backend
+          zip -r ../release.zip . -x "*.git*" "node_modules/*" "*.env"
+
+      # 🚀 部署到 Azure App Service
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'bookstore-backend'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: release.zip
+
+
+
+
+
+
+
+

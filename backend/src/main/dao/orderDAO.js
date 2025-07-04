@@ -82,36 +82,37 @@ function insertOrder(orderData, callback) {
 				return callback(err);
 			}
 
-			// 插入主訂單到 orders 表
-			const insertOrderSql = `
-				INSERT INTO orders (
-					order_id, user_id, ISBN_id, delivery_id, user_name, user_tel, 
-					user_email, user_address, payment_method, message, 
-					delivery_method, carrier, estimated_weight, shipping_fee, 
-					total_amount, status, created_at
-				) VALUES (?, 1, ?, 'DEL001', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
-			`;
+					// 插入主訂單到 orders 表
+		const insertOrderSql = `
+			INSERT INTO orders (
+				order_id, user_id, ISBN_id, delivery_id, user_name, user_tel, 
+				user_email, user_address, payment_method, message, 
+				delivery_method, carrier, estimated_weight, shipping_fee, 
+				total_amount, status, created_at
+			) VALUES (?, ?, ?, 'DEL001', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+		`;
 
-			// 使用第一個商品的 ISBN_id 作為主要商品
-			const firstItem = orderData.items[0];
-			const delivery = orderData.delivery || {};
-			const user = orderData.user || {};
+		// 使用第一個商品的 ISBN_id 作為主要商品
+		const firstItem = orderData.items[0];
+		const delivery = orderData.delivery || {};
+		const user = orderData.user || {};
 
-			const orderValues = [
-				orderId,
-				firstItem.id, // ISBN_id
-				user.name || '訪客',
-				user.tel || '',
-				user.email || '',
-				user.address || '',
-				orderData.payment || 'online',
-				orderData.message || '',
-				delivery.delivery_method || 'standard',
-				delivery.carrier || '',
-				delivery.estimated_weight || 0,
-				delivery.shipping_fee || 0,
-				orderData.totalAmount
-			];
+		const orderValues = [
+			orderId,
+			user.id,
+			firstItem.id, // ISBN_id
+			user.name || '訪客',
+			user.tel || '',
+			user.email || '',
+			user.address || '',
+			orderData.payment || 'online',
+			orderData.message || '',
+			delivery.delivery_method || 'standard',
+			delivery.carrier || '',
+			delivery.estimated_weight || 0,
+			delivery.shipping_fee || 0,
+			orderData.totalAmount
+		];
 
 			connection.query(insertOrderSql, orderValues, (err, orderResult) => {
 				if (err) {
@@ -219,9 +220,113 @@ function selectFullOrderData(orderId, callback) {
 	});
 }
 
+// 刪除訂單及其相關明細
+function deleteOrderById(orderId, callback) {
+	// 使用連接池獲取連接
+	db.getConnection((err, connection) => {
+		if (err) {
+			console.error('獲取資料庫連接失敗:', err);
+			return callback(err);
+		}
+
+		// 開始事務
+		connection.beginTransaction((err) => {
+			if (err) {
+				connection.release();
+				console.error('開始刪除事務失敗:', err);
+				return callback(err);
+			}
+
+			// 先刪除訂單明細 (orders_query 表)
+			const deleteDetailsSql = 'DELETE FROM orders_query WHERE order_id = ?';
+			
+			connection.query(deleteDetailsSql, [orderId], (err, detailResult) => {
+				if (err) {
+					console.error('刪除訂單明細錯誤:', err);
+					return connection.rollback(() => {
+						connection.release();
+						callback(err);
+					});
+				}
+
+				// 再刪除主訂單 (orders 表)
+				const deleteOrderSql = 'DELETE FROM orders WHERE order_id = ?';
+				
+				connection.query(deleteOrderSql, [orderId], (err, orderResult) => {
+					if (err) {
+						console.error('刪除主訂單錯誤:', err);
+						return connection.rollback(() => {
+							connection.release();
+							callback(err);
+						});
+					}
+
+					// 檢查是否真的刪除了訂單
+					if (orderResult.affectedRows === 0) {
+						return connection.rollback(() => {
+							connection.release();
+							callback(new Error('訂單不存在或已被刪除'));
+						});
+					}
+
+					// 提交事務
+					connection.commit((err) => {
+						if (err) {
+							console.error('提交刪除事務失敗:', err);
+							return connection.rollback(() => {
+								connection.release();
+								callback(err);
+							});
+						}
+						
+						connection.release();
+						console.log('訂單刪除成功，訂單ID:', orderId);
+						callback(null, { 
+							success: true, 
+							orderId: orderId,
+							deletedDetails: detailResult.affectedRows,
+							message: '訂單已成功刪除'
+						});
+					});
+				});
+			});
+		});
+	});
+}
+
+// 取得所有訂單（管理員用）
+function selectAllOrders(callback) {
+	const sql = 'SELECT * FROM orders';
+	db.query(sql, (err, results) => {
+		if (err) return callback(err);
+		callback(null, results);
+	});
+}
+
+// 取得所有訂單明細（管理員用）
+function selectAllOrderDetails(callback) {
+	const sql = 'SELECT * FROM orders_query';
+	db.query(sql, (err, results) => {
+		if (err) return callback(err);
+		callback(null, results);
+	});
+}
+
+// 取得所有商品（管理員用）
+function selectAllProducts(callback) {
+	const sql = 'SELECT * FROM products';
+	db.query(sql, (err, results) => {
+		if (err) return callback(err);
+		callback(null, results);
+	});
+}
 
 module.exports = {
 	selectOrderById,
 	insertOrder,
 	selectFullOrderData,
+	deleteOrderById,
+	selectAllOrders,
+	selectAllOrderDetails,
+	selectAllProducts,
 };

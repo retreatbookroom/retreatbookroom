@@ -7,19 +7,22 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 
-// 後端設置
-import axios from 'axios';
+import api from './api'; // 引入 api.js
 
-axios.defaults.baseURL = process.env.VUE_APP_BASE_URL;
+Vue.prototype.$axios = api;
+Vue.prototype.$apiBaseUrl = api.defaults.baseURL;
+
+
+
+// const BASE_URL = process.env.VUE_APP_BACKEND_URL;
 // const BASE_URL = 'https://bookstore-backend-production-f711.up.railway.app';
-// const BASE_URL = 'https://retreatbookroom.onrender.com';
 // const BASE_URL = 'http://localhost:3000';
 // this.$axios.post
 // axios.defaults.baseURL = BASE_URL;
 
-Vue.prototype.$axios = axios;
+// Vue.prototype.$axios = axios;
 // 把 baseURL 也綁到 Vue 原型方便全局取用
-Vue.prototype.$apiBaseUrl = process.env.VUE_APP_BASE_URL;
+// Vue.prototype.$apiBaseUrl = BASE_URL;
 
 
 
@@ -29,12 +32,12 @@ import VueLazyloadModule from "vue-lazyload";
 const VueLazyload = VueLazyloadModule.default || VueLazyloadModule;
 // ✅ 延遲加載先啟用（在 new Vue 之前！
 Vue.use(VueLazyload, {
-  // loading:'/images/loadGo.svg'//匯入加載預設圖
-  loading: "/images/load.jpg", //匯入加載預設圖
-  error: "/images/load_fail.jpg", //匯入錯誤預設圖;
+	// loading:'/images/loadGo.svg'//匯入加載預設圖
+	loading: require('@/assets/images/load.jpg'), //匯入加載預設圖
+	error: require('@/assets/images/load_fail.jpg'), //匯入錯誤預設圖;
 });
-console.log("是物件或函式嗎", typeof VueLazyload);
-console.log("測試印出vue-lazyload directive:", Vue.options.directives.lazy);
+// console.log("是物件或函式嗎", typeof VueLazyload);
+// console.log("測試印出vue-lazyload directive:", Vue.options.directives.lazy);
 
 
 
@@ -45,13 +48,13 @@ Vue.config.productionTip = false;
 
 // 設定 axios 請求攔截器，將 token 加入到請求頭中
 // 這樣可以在每次發送請求時自動攜帶 token
-axios.interceptors.request.use(config => {
-	const token = localStorage.getItem('token');
-	if (token) {
-		config.headers.Authorization = `Bearer ${token}`;
-	}
-	return config;
-});
+// axios.interceptors.request.use(config => {
+// 	const token = localStorage.getItem('token');
+// 	if (token) {
+// 		config.headers.Authorization = `Bearer ${token}`;
+// 	}
+// 	return config;
+// });
 
 
 // 權限驗證（後台）
@@ -74,6 +77,21 @@ router.beforeEach((to, from, next) => {
 });
 
 new Vue({
-	render: h => h(App),
 	router,
+	render: h => h(App),
+
+	// 新增 mounted 鉤子，在應用啟動時呼叫訪問記錄 API
+	mounted() {
+		// 排除 /admin 及其子路由
+		if (!this.$router.currentRoute.path.startsWith('/admin')) {
+			this.$axios.post('/api/trackVisit')
+				.then(() => {
+					console.log('訪問紀錄成功');
+				})
+				.catch(() => {
+					console.warn('訪問紀錄失敗');
+				});
+		}
+	}
 }).$mount('#app');
+

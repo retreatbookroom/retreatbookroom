@@ -37,6 +37,7 @@ app.get("/search/con=:con&kw=:keyWord", (req, res) => {
     if (err) return res.status(500).json({ error: "查詢失敗", details: err });
     res.json({
       books: results[0]
+      // books: results[0],total: results[1][0].totalBook
     });
   });
 });
@@ -85,6 +86,60 @@ app.get("/book/:id", (req, res) => {
     res.json({
       book: results[0]
     });
+  });
+});
+//精確找作者
+
+/* call 預存_作者_精確(作者名)
+SELECT ISBN_id,name,description,price,award,author,imgUrl,series FROM products WHERE author = str;
+*/
+app.get("/author/:name", (req, res) => {
+  const Bname = req.params.name;
+  const str_spans = "CALL 預存_作者_精確(?)";
+
+  db.query(str_spans, [Bname], (err, results) => {
+    if (err) {
+      console.error("❌ 資料庫查詢錯誤：", err); // ← 加這行來看詳細錯誤
+      return res.status(500).json({ error: "查詢失敗", details: err });
+    }
+    res.json({
+      books: results[0]
+    });
+  });
+});
+
+
+// 亘：加入收藏
+app.post('/favorites', (req, res) => {
+  const { user_id, ISBN_id } = req.body;
+
+  // 先確認使用者是否存在
+  db.query('SELECT * FROM users WHERE user_id = ?', [user_id], (err, users) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: '伺服器錯誤' });
+    }
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    // 再插入收藏
+    db.query(
+      'INSERT INTO user_favorites (user_id, ISBN_id) VALUES (?, ?)',
+      [user_id, ISBN_id],
+      (err2, result) => {
+        if (err2) {
+          if (err2.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: '已收藏過' });
+          } else {
+            console.error(err2);
+            return res.status(500).json({ error: '伺服器錯誤' });
+          }
+        }
+        res.status(201).json({ message: '已收藏' });
+      }
+    );
   });
 });
 

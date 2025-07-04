@@ -2,12 +2,22 @@ import Vue from 'vue';
 import Router from 'vue-router';
 
 
+import AdminView from '@/views/AdminView.vue';
+import AdminLoginView from '@/views/AdminLoginView.vue';
+import AdminHomePage from '@/components/pages/admin/AdminHomePage.vue';
+import AdminMemberPage from '@/components/pages/admin/AdminMemberPage.vue';
+import AdminOrderPage from '@/components/pages/admin/AdminOrderPage.vue';
+import AdminVisitPage from '@/components/pages/admin/AdminVisitPage.vue';
+import AdminBookPage from '@/components/pages/admin/AdminBookPage.vue';
+
 import book_detail from '@/views/book_detail.vue';
+import search_page from '@/views/search_page.vue';
+import author_page from '@/views/author_page.vue';
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue';
 import IndexView from '@/views/IndexView.vue';
 import LoginView from '@/views/LoginView.vue';
 import MembersView from '@/views/MembersView.vue';		// 會員可視
-import sub_page from '@/views/sub_page.vue';		// 會員可視
+import sub_page from '@/views/sub_page.vue';
 // import ProductsView from '@/views/ProductsView.vue';		// 會員可視
 import RegisterView from '@/views/RegisterView.vue';
 import ShoppingCartView from '@/views/ShoppingCartView.vue';
@@ -31,6 +41,48 @@ const router = new Router({
 			path: '/',
 			name: 'Index',
 			component: IndexView,
+		},
+		{
+			path: '/admin',
+			name: 'AdminLoginView',
+			component: AdminLoginView,
+		},
+		{	// 後台管理者頁面
+			path: '/admin',
+			component: AdminView, // 導覽列和共用功能
+			meta: { requiresAdmin: true },	// 需要管理員身份
+			children: [
+				{
+					path: '',
+					redirect: 'home', // 預設 /admin 轉到 /admin/home
+				},
+				{
+					path: 'home',
+					name: 'AdminHomePage',
+					component: AdminHomePage,
+				},
+				{
+					path: 'member',
+					name: 'AdminMemberPage',
+					component: AdminMemberPage,
+				},
+				{
+					path: 'orders',
+					name: 'AdminOrderPage',
+					component: AdminOrderPage,
+				},
+				{
+					path: 'visit',
+					name: 'AdminVisitPage',
+					component: AdminVisitPage,
+				},// /admin/books 書本管理
+				{	// 圖表測試
+					path: 'books',
+					name: 'AdminBookPage',
+					component: AdminBookPage,
+				}
+				
+			],
 		},
 		{
 			path: '/login',
@@ -76,9 +128,19 @@ const router = new Router({
 			path: "/book/:isbn",
 			component: book_detail,
 			props: true,
+		},// http://localhost:8080/search?q=ds&scope=name
+		{
+			path: '/search',
+			name: 'search', // 
+			component: search_page
 		},
 		{
-			path: "/:sub",
+			path: "/author/:name",
+			name: 'author',
+			component: author_page,
+			props: true,
+		}, {
+			path: "/:sub", //:sub 為動態路由參數
 			component: sub_page,
 			props: true,
 		},
@@ -87,8 +149,28 @@ const router = new Router({
 			name: 'TestView',
 			component: TestView,
 		},
+
+
 	],
 });
+
+// ✅ 加入導航守衛(管理者未應用)
+router.beforeEach((to, from, next) => {
+	// 檢查所有 matched 的路由，是否有一個 requiresAdmin
+	// 用 .some(...) 就能正確攔截整條鏈裡的任何一個需要權限的設定。
+	const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
+	if (requiresAdmin) {
+		const isAdmin = localStorage.getItem('isAdmin');
+		if (isAdmin) {
+			next(); // 有管理員身分，放行
+		} else {
+			next('/admin'); // 沒有身分，導回登入頁
+		}
+	} else {
+		next(); // 不需權限，放行
+	}
+});
+
 
 // 會員需登入
 // router.beforeEach((to, from, next) => {

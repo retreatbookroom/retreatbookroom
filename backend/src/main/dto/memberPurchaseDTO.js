@@ -5,10 +5,11 @@
 
 // 訂單 DTO，（主檔 + 明細陣列）
 class OrderDTO {
-	constructor({ id, created_at, status, total, statusText, details = [] }) {
+	constructor({ id, created_at, status, shipping_fee, total, statusText, details = [] }) {
 		this.id = id;
 		this.created_at = created_at;
 		this.status = statusText; // 前端使用的是 statusText，而不是數字代碼
+		this.shipping_fee = shipping_fee;
 		this.total = total;
 		this.details = details;
 	}
@@ -17,8 +18,8 @@ class OrderDTO {
 
 // 單筆訂單明細 DTO
 class OrderDetailDTO{
-	constructor({ id, name, price, qty }) {
-		this.id = id;
+	constructor({ ISBN_id, name, price, qty }) {
+		this.ISBN_id = ISBN_id;
 		this.name = name;
 		this.price = price;
 		this.qty = qty;
