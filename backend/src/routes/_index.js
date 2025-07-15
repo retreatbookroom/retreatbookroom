@@ -11,6 +11,7 @@ router.use('/trackVisit', require('./trackVisitRoute'));
 
 // 資料庫路由(/api)
 router.use('/alwaysdataDB', require('./alwaysdataRoute'));
+router.use('/azureDB', require('./azureRoute'));
 
 // 各功能路由(/api)
 router.use('/captcha', require('../main/route/captchaRoute'));

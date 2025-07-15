@@ -94,7 +94,7 @@ export default {
     async fetchRecommendBooks() {
       try {
         // 改成這樣能直接從main.js統一控制來源
-        const response = await this.$axios.get("/api/alwaysdataDB/products");
+        const response = await this.$axios.get("/api/azureDB/products");
 
         const data = response.data; // 直接取用陣列
         if (!Array.isArray(data)) {

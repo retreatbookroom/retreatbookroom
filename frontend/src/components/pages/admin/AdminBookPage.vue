@@ -29,7 +29,7 @@ export default {
             try {
                 this.books = []; // 清空再重新抓，以免資料重複抓重複顯示
                 const products =
-                    await this.$axios.get('/api/alwaysdataDB/products');
+                    await this.$axios.get('/api/azureDB/products');
                 this.books = products.data;
             } catch (e) {
                 //發生錯誤時印出錯誤訊息到主控台

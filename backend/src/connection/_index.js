@@ -1,15 +1,26 @@
 // backend/src/connection/_index.js
 
-// 根據.env設定自動選擇資料庫
 require('dotenv').config();
 
 let db;
 
-db = require('./alwaysdataConnection');
+// 根據 .env 的 DB_TYPE 選擇資料庫連線
+const dbProvider = process.env.DB_TYPE;
 
-// 顯示選擇的資料庫
+switch (dbProvider) {
+  case 'azure':
+    db = require('./azureConnection');
+    break;
+  case 'alwaysdata':
+    db = require('./alwaysdataConnection');
+    break;
+  default:
+    console.error(`❌ 錯誤：無效的 DB_TYPE 設定（目前為 "${dbProvider}"）。請在 .env 中設為 "azure" 或 "alwaysdata"。`);
+    process.exit(1);
+}
+
 setTimeout(() => {
-  console.log(`【目前選用資料庫】 alwaysdata\n`);
+  console.log(`【目前選用資料庫】 ${dbProvider}\n`);
 }, 2000);
 
 module.exports = db;
