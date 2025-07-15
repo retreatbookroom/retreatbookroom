@@ -68,9 +68,9 @@
 					<span v-else class="badge bg-warning text-dark">未驗證</span>
 				</div>
 				<div class="d-flex align-items-center w-100">
-					<!-- <input type="email" v-model="user.email" class="edit-input" v-show="isEditingContact" />
-					<p class="display-text" v-show="!isEditingContact">{{ user.email }}</p> -->
-					<p class="display-text">{{ user.email }}</p>
+					<input type="email" v-model="user.email" class="edit-input" v-show="isEditingContact" />
+					<p class="display-text" v-show="!isEditingContact">{{ user.email }}</p>
+					<!-- <p class="display-text">{{ user.email }}</p> -->
 					<button v-if="!isEditingContact && !user.isEmailVerified"
 						class="display-text btn btn-sm btn-outline-success ms-2" :disabled="isSending || countdown > 0"
 						@click="sendVerificationEmail">
